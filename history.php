@@ -101,7 +101,7 @@ $conn->close();
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Transaction History — Expense Tracker</title>
+    <title>Transaction History — Ledger</title>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
@@ -112,19 +112,22 @@ $conn->close();
 <!-- NAVBAR -->
 <nav class="navbar navbar-expand-lg app-navbar">
     <div class="container-fluid px-4">
-        <a class="navbar-brand d-flex align-items-center gap-2" href="dashboard.php">
-            <i class="bi bi-wallet2 fs-4"></i><span class="fw-bold">ExpenseTracker</span>
+        <a class="navbar-brand" href="dashboard.php">
+            <i class="bi bi-journal-bookmark" style="color: var(--sage);"></i>
+            Ledger<span class="brand-dot"></span>
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navMenu">
-            <ul class="navbar-nav ms-auto align-items-center gap-2">
-                <li class="nav-item"><a class="nav-link" href="dashboard.php"><i class="bi bi-speedometer2 me-1"></i>Dashboard</a></li>
-                <li class="nav-item"><a class="nav-link" href="add_transaction.php"><i class="bi bi-plus-circle me-1"></i>Add Transaction</a></li>
-                <li class="nav-item"><a class="nav-link active" href="history.php"><i class="bi bi-clock-history me-1"></i>History</a></li>
+            <ul class="navbar-nav ms-auto align-items-center gap-1">
+                <li class="nav-item"><a class="nav-link" href="dashboard.php"><i class="bi bi-grid-1x2 me-1"></i>Overview</a></li>
+                <li class="nav-item"><a class="nav-link" href="add_transaction.php"><i class="bi bi-plus-circle me-1"></i>Record</a></li>
+                <li class="nav-item"><a class="nav-link active" href="history.php"><i class="bi bi-list-ul me-1"></i>History</a></li>
                 <li class="nav-item ms-2">
-                    <a class="nav-link text-danger" href="logout.php"><i class="bi bi-box-arrow-right me-1"></i>Logout</a>
+                    <a class="nav-link" href="logout.php" style="color:rgba(244,243,239,.5)!important;">
+                        <i class="bi bi-box-arrow-right me-1"></i>Logout
+                    </a>
                 </li>
             </ul>
         </div>
@@ -134,68 +137,77 @@ $conn->close();
 <main class="container-fluid px-4 py-4">
 
     <!-- Page Header -->
-    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div class="d-flex align-items-start justify-content-between mb-4 flex-wrap gap-3">
         <div>
-            <h4 class="fw-bold mb-0"><i class="bi bi-clock-history me-2"></i>Transaction History</h4>
-            <small class="text-muted"><?= number_format((int)$totals['total_count']) ?> records found</small>
+            <h1 class="page-heading">The full ledger.</h1>
+            <p class="page-subheading">
+                <?= number_format((int)$totals['total_count']) ?> record<?= (int)$totals['total_count'] !== 1 ? 's' : '' ?> found
+            </p>
         </div>
-        <a href="add_transaction.php" class="btn btn-primary btn-sm">
-            <i class="bi bi-plus-lg me-1"></i>Add New
+        <a href="add_transaction.php" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Record New
         </a>
     </div>
 
     <!-- Deleted Alert -->
     <?php if (isset($_GET['deleted'])): ?>
-        <div class="alert alert-warning d-flex align-items-center alert-dismissible fade show">
-            <i class="bi bi-trash me-2"></i> Transaction deleted successfully.
+        <div class="alert alert-warning d-flex align-items-center alert-dismissible fade show mb-4">
+            <i class="bi bi-trash me-2"></i> Entry removed from your ledger.
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     <?php endif; ?>
 
     <!-- ===== FILTER PANEL ===== -->
     <div class="info-card mb-4">
-        <h6 class="fw-bold mb-3"><i class="bi bi-funnel me-2"></i>Filters</h6>
+        <div style="font-family:var(--font-sans); font-size:.72rem; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--text-muted); margin-bottom:1rem;">
+            <i class="bi bi-sliders me-1"></i> Filter Records
+        </div>
         <form method="GET" action="history.php" class="row g-3 align-items-end">
 
             <div class="col-12 col-md-3">
-                <label class="form-label fw-semibold small">Type</label>
-                <select name="type" class="form-select form-select-sm">
-                    <option value="All"     <?= $filter_type === 'All'     ? 'selected' : '' ?>>All Types</option>
-                    <option value="Income"  <?= $filter_type === 'Income'  ? 'selected' : '' ?>>Income</option>
-                    <option value="Expense" <?= $filter_type === 'Expense' ? 'selected' : '' ?>>Expense</option>
-                </select>
+                <div class="ul-group" style="margin-bottom:0;">
+                    <label class="ul-label">Type</label>
+                    <select name="type">
+                        <option value="All"     <?= $filter_type === 'All'     ? 'selected' : '' ?>>All Types</option>
+                        <option value="Income"  <?= $filter_type === 'Income'  ? 'selected' : '' ?>>Income Only</option>
+                        <option value="Expense" <?= $filter_type === 'Expense' ? 'selected' : '' ?>>Expenses Only</option>
+                    </select>
+                </div>
             </div>
 
             <div class="col-12 col-md-3">
-                <label class="form-label fw-semibold small">Category</label>
-                <select name="category_id" class="form-select form-select-sm">
-                    <option value="0">All Categories</option>
-                    <?php foreach ($categories as $cat): ?>
-                        <option value="<?= $cat['id'] ?>"
-                            <?= $filter_cat === (int)$cat['id'] ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($cat['name']) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
+                <div class="ul-group" style="margin-bottom:0;">
+                    <label class="ul-label">Category</label>
+                    <select name="category_id">
+                        <option value="0">All Categories</option>
+                        <?php foreach ($categories as $cat): ?>
+                            <option value="<?= $cat['id'] ?>" <?= $filter_cat === (int)$cat['id'] ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($cat['name']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
             </div>
 
             <div class="col-12 col-md-2">
-                <label class="form-label fw-semibold small">From Date</label>
-                <input type="date" name="date_from" class="form-control form-control-sm"
-                       value="<?= htmlspecialchars($filter_from) ?>"/>
+                <div class="ul-group" style="margin-bottom:0;">
+                    <label class="ul-label">From</label>
+                    <input type="date" name="date_from" value="<?= htmlspecialchars($filter_from) ?>"/>
+                </div>
             </div>
 
             <div class="col-12 col-md-2">
-                <label class="form-label fw-semibold small">To Date</label>
-                <input type="date" name="date_to" class="form-control form-control-sm"
-                       value="<?= htmlspecialchars($filter_to) ?>"/>
+                <div class="ul-group" style="margin-bottom:0;">
+                    <label class="ul-label">To</label>
+                    <input type="date" name="date_to" value="<?= htmlspecialchars($filter_to) ?>"/>
+                </div>
             </div>
 
-            <div class="col-12 col-md-2 d-flex gap-2">
+            <div class="col-12 col-md-2 d-flex gap-2 pt-2">
                 <button type="submit" class="btn btn-primary btn-sm flex-fill">
-                    <i class="bi bi-search me-1"></i>Filter
+                    <i class="bi bi-search me-1"></i>Apply
                 </button>
-                <a href="history.php" class="btn btn-outline-secondary btn-sm">
+                <a href="history.php" class="btn btn-outline-secondary btn-sm" title="Clear filters">
                     <i class="bi bi-x-lg"></i>
                 </a>
             </div>
@@ -203,26 +215,40 @@ $conn->close();
         </form>
     </div>
 
-    <!-- ===== FILTERED SUMMARY CHIPS ===== -->
-    <div class="d-flex gap-3 mb-3 flex-wrap">
+    <!-- ===== SUMMARY CHIPS ===== -->
+    <div class="d-flex gap-3 mb-4 flex-wrap">
         <span class="filter-chip income-chip">
-            <i class="bi bi-arrow-down me-1"></i>Income: <strong>₹ <?= number_format((float)$totals['filtered_income'], 2) ?></strong>
+            <i class="bi bi-arrow-down me-1"></i>
+            Income &nbsp;<strong>₹ <?= number_format((float)$totals['filtered_income'], 2) ?></strong>
         </span>
         <span class="filter-chip expense-chip">
-            <i class="bi bi-arrow-up me-1"></i>Expenses: <strong>₹ <?= number_format((float)$totals['filtered_expense'], 2) ?></strong>
+            <i class="bi bi-arrow-up me-1"></i>
+            Expenses &nbsp;<strong>₹ <?= number_format((float)$totals['filtered_expense'], 2) ?></strong>
         </span>
         <span class="filter-chip balance-chip">
-            <i class="bi bi-wallet me-1"></i>Net: <strong>₹ <?= number_format((float)$totals['filtered_income'] - (float)$totals['filtered_expense'], 2) ?></strong>
+            <i class="bi bi-wallet me-1"></i>
+            Net &nbsp;<strong>₹ <?= number_format((float)$totals['filtered_income'] - (float)$totals['filtered_expense'], 2) ?></strong>
         </span>
     </div>
 
     <!-- ===== TRANSACTIONS TABLE ===== -->
     <div class="info-card">
         <?php if (empty($transactions)): ?>
-            <div class="text-center py-5">
-                <i class="bi bi-search fs-1 text-muted"></i>
-                <p class="mt-2 text-muted">No transactions match your filters.</p>
-                <a href="history.php" class="btn btn-outline-primary btn-sm">Clear Filters</a>
+            <div class="empty-state">
+                <div class="es-icon">🔍</div>
+                <div class="es-title">Nothing to show here.</div>
+                <p class="es-sub">
+                    <?php if ($filter_type !== 'All' || $filter_from || $filter_to || $filter_cat > 0): ?>
+                        No records match your current filters. Try widening the search.
+                    <?php else: ?>
+                        Your ledger is clean. Start by recording your first transaction.
+                    <?php endif; ?>
+                </p>
+                <?php if ($filter_type !== 'All' || $filter_from || $filter_to || $filter_cat > 0): ?>
+                    <a href="history.php" class="es-action">Clear Filters</a>
+                <?php else: ?>
+                    <a href="add_transaction.php" class="es-action">Record First Entry</a>
+                <?php endif; ?>
             </div>
         <?php else: ?>
             <div class="table-responsive">
@@ -241,27 +267,31 @@ $conn->close();
                     <tbody>
                         <?php foreach ($transactions as $i => $txn): ?>
                         <tr>
-                            <td class="text-muted small"><?= $i + 1 ?></td>
-                            <td class="text-muted small"><?= date('d M Y', strtotime($txn['date'])) ?></td>
+                            <td style="color:var(--text-subtle); font-size:.8rem;"><?= $i + 1 ?></td>
+                            <td style="color:var(--text-muted); font-size:.82rem; white-space:nowrap; font-family:var(--font-sans);">
+                                <?= date('d M \'y', strtotime($txn['date'])) ?>
+                            </td>
                             <td>
                                 <?php if ($txn['type'] === 'Income'): ?>
-                                    <span class="badge bg-success-subtle text-success">
+                                    <span class="filter-chip income-chip" style="padding:.15rem .65rem; font-size:.72rem;">
                                         <i class="bi bi-arrow-down me-1"></i>Income
                                     </span>
                                 <?php else: ?>
-                                    <span class="badge bg-danger-subtle text-danger">
+                                    <span class="filter-chip expense-chip" style="padding:.15rem .65rem; font-size:.72rem;">
                                         <i class="bi bi-arrow-up me-1"></i>Expense
                                     </span>
                                 <?php endif; ?>
                             </td>
                             <td><span class="category-pill"><?= htmlspecialchars($txn['category_name']) ?></span></td>
-                            <td class="text-muted"><?= htmlspecialchars($txn['description'] ?: '—') ?></td>
-                            <td class="text-end fw-semibold <?= $txn['type'] === 'Income' ? 'text-success' : 'text-danger' ?>">
-                                <?= $txn['type'] === 'Income' ? '+' : '-' ?>₹ <?= number_format((float)$txn['amount'], 2) ?>
+                            <td style="color:var(--text-muted); font-size:.87rem; max-width:200px;">
+                                <?= htmlspecialchars($txn['description'] ?: '—') ?>
+                            </td>
+                            <td class="text-end" style="font-family:var(--font-serif); font-weight:700; font-size:.95rem; color:<?= $txn['type'] === 'Income' ? 'var(--sage-deep)' : 'var(--rose-deep)' ?>; white-space:nowrap;">
+                                <?= $txn['type'] === 'Income' ? '+' : '−' ?>₹ <?= number_format((float)$txn['amount'], 2) ?>
                             </td>
                             <td class="text-center">
                                 <form method="POST" action="history.php"
-                                      onsubmit="return confirm('Delete this transaction?')">
+                                      onsubmit="return confirm('Remove this entry from your ledger?')">
                                     <input type="hidden" name="delete_id" value="<?= $txn['id'] ?>"/>
                                     <button type="submit" class="btn btn-sm btn-outline-danger">
                                         <i class="bi bi-trash"></i>
@@ -273,12 +303,18 @@ $conn->close();
                     </tbody>
 
                     <!-- Table Footer Totals -->
-                    <tfoot class="table-head fw-bold">
-                        <tr>
-                            <td colspan="5" class="text-end">Filtered Totals</td>
-                            <td class="text-end">
-                                <span class="text-success">+<?= number_format((float)$totals['filtered_income'], 2) ?></span><br/>
-                                <span class="text-danger">-<?= number_format((float)$totals['filtered_expense'], 2) ?></span>
+                    <tfoot>
+                        <tr style="border-top:1.5px solid var(--border);">
+                            <td colspan="5" class="text-end" style="font-family:var(--font-sans); font-size:.72rem; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); padding-top:1rem;">
+                                Filtered Totals
+                            </td>
+                            <td class="text-end" style="padding-top:1rem;">
+                                <span style="font-family:var(--font-serif); font-size:.9rem; color:var(--sage-deep); font-weight:700;">
+                                    +<?= number_format((float)$totals['filtered_income'], 2) ?>
+                                </span><br/>
+                                <span style="font-family:var(--font-serif); font-size:.9rem; color:var(--rose-deep); font-weight:700;">
+                                    −<?= number_format((float)$totals['filtered_expense'], 2) ?>
+                                </span>
                             </td>
                             <td></td>
                         </tr>
@@ -290,8 +326,8 @@ $conn->close();
 
 </main>
 
-<footer class="text-center py-3 mt-4">
-    <small class="text-muted">Personal Expense Tracker &copy; <?= date('Y') ?> — DPU MCA Project</small>
+<footer class="text-center py-3 mt-5">
+    <small>Personal Ledger &copy; <?= date('Y') ?> — DPU MCA Project</small>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

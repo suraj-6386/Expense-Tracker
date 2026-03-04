@@ -5,7 +5,6 @@
 
 session_start();
 
-// If user is already logged in, redirect to dashboard
 if (isset($_SESSION['user_id'])) {
     header('Location: dashboard.php');
     exit;
@@ -15,13 +14,11 @@ require_once 'config.php';
 
 $error = '';
 
-// -- Handle Login Form Submission ----------------------------
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $email    = trim($_POST['email']    ?? '');
     $password = trim($_POST['password'] ?? '');
 
-    // Basic validation
     if (empty($email) || empty($password)) {
         $error = 'Please fill in both Email and Password.';
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -29,7 +26,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $conn = getConnection();
 
-        // Use prepared statement to prevent SQL Injection
         $stmt = $conn->prepare(
             'SELECT id, username, email, password, user_role FROM users WHERE email = ?'
         );
@@ -40,9 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($result->num_rows === 1) {
             $user = $result->fetch_assoc();
 
-            // Verify hashed password
             if (password_verify($password, $user['password'])) {
-                // Regenerate session ID to prevent session fixation
                 session_regenerate_id(true);
 
                 $_SESSION['user_id']   = $user['id'];
@@ -72,92 +66,84 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Login — Personal Expense Tracker</title>
+    <title>Sign In — Ledger</title>
 
-    <!-- Bootstrap 5 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
-    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
-    <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css"/>
 </head>
 <body class="auth-body">
 
-<div class="container d-flex justify-content-center align-items-center min-vh-100">
+<div class="container d-flex justify-content-center align-items-center min-vh-100 py-5">
     <div class="auth-card">
 
-        <!-- Logo / Header -->
-        <div class="auth-header text-center mb-4">
-            <div class="auth-logo mb-3">
-                <i class="bi bi-wallet2"></i>
+        <!-- Wordmark -->
+        <div class="text-center mb-4">
+            <div class="auth-wordmark mb-1">
+                <i class="bi bi-journal-bookmark" style="font-size:1.5rem; color: var(--sage);"></i>
+                Ledger<span class="wm-dot"></span>
             </div>
-            <h2 class="fw-bold">Expense Tracker</h2>
-            <p class="text-muted">Sign in to manage your finances</p>
+            <p class="auth-subtitle">Your finances, beautifully organized.</p>
         </div>
 
         <!-- Error Alert -->
         <?php if (!empty($error)): ?>
-            <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center" role="alert">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <div class="alert alert-danger d-flex align-items-center mb-4" role="alert">
+                <i class="bi bi-exclamation-circle me-2"></i>
                 <?= htmlspecialchars($error) ?>
-                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
             </div>
         <?php endif; ?>
 
         <!-- Login Form -->
         <form method="POST" action="index.php" novalidate>
 
-            <div class="mb-3">
-                <label for="email" class="form-label fw-semibold">Email Address</label>
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                    <input
-                        type="email"
-                        class="form-control"
-                        id="email"
-                        name="email"
-                        placeholder="you@example.com"
-                        value="<?= htmlspecialchars($_POST['email'] ?? '') ?>"
-                        required
-                        autofocus
-                    />
-                </div>
+            <div class="underline-field">
+                <label for="email">Email Address</label>
+                <i class="bi bi-envelope field-icon"></i>
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    placeholder="you@example.com"
+                    value="<?= htmlspecialchars($_POST['email'] ?? '') ?>"
+                    required
+                    autofocus
+                />
             </div>
 
-            <div class="mb-4">
-                <label for="password" class="form-label fw-semibold">Password</label>
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                    <input
-                        type="password"
-                        class="form-control"
-                        id="password"
-                        name="password"
-                        placeholder="Enter your password"
-                        required
-                    />
-                </div>
+            <div class="underline-field">
+                <label for="password">Password</label>
+                <i class="bi bi-lock field-icon"></i>
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="Enter your password"
+                    required
+                />
             </div>
 
-            <div class="d-grid mb-3">
-                <button type="submit" class="btn btn-primary btn-lg btn-auth">
-                    <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+            <div class="mt-4 mb-3">
+                <button type="submit" class="btn-auth">
+                    Sign In &rarr;
                 </button>
             </div>
 
         </form>
 
-        <hr/>
+        <div class="auth-divider">or</div>
 
-        <p class="text-center mb-0 text-muted">
-            Don't have an account?
-            <a href="register.php" class="fw-semibold text-decoration-none">Create Account</a>
+        <p class="text-center mb-3" style="font-family: var(--font-sans); font-size: .88rem; color: var(--text-muted);">
+            New here?
+            <a href="register.php" style="color: var(--text); font-weight: 600; text-decoration: none;">Create an account</a>
         </p>
 
-        <!-- Demo Credentials Info -->
+        <!-- Demo Credentials -->
         <div class="demo-box mt-3">
-            <p class="mb-1 fw-semibold"><i class="bi bi-info-circle me-1"></i>Demo Credentials</p>
-            <small>
+            <p class="mb-1" style="font-weight:600; font-size:.8rem; color:var(--text);">
+                <i class="bi bi-info-circle me-1" style="color:var(--sage);"></i>Demo Credentials
+            </p>
+            <small style="line-height:1.8;">
                 <strong>Student:</strong> suraj@gmail.com / password<br/>
                 <strong>Corporate:</strong> corporate@company.com / password
             </small>

@@ -1,13 +1,10 @@
 <?php
 // ============================================================
 //  dashboard.php — Main Dashboard
-//  Shows: Total Income, Total Expense, Remaining Balance
-//         + Recent 10 transactions
 // ============================================================
 
 session_start();
 
-// Auth guard — redirect to login if not logged in
 if (!isset($_SESSION['user_id'])) {
     header('Location: index.php');
     exit;
@@ -67,13 +64,21 @@ $conn->close();
 function rupees(float $val): string {
     return '₹ ' . number_format($val, 2);
 }
+
+// Time-based greeting
+$hour = (int) date('H');
+if ($hour < 12)      $greeting = 'Good morning';
+elseif ($hour < 17)  $greeting = 'Good afternoon';
+else                 $greeting = 'Good evening';
+
+$firstName = htmlspecialchars(explode(' ', $_SESSION['username'])[0]);
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Dashboard — Expense Tracker</title>
+    <title>Dashboard — Ledger</title>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
@@ -84,9 +89,9 @@ function rupees(float $val): string {
 <!-- ===== NAVBAR ===== -->
 <nav class="navbar navbar-expand-lg app-navbar">
     <div class="container-fluid px-4">
-        <a class="navbar-brand d-flex align-items-center gap-2" href="dashboard.php">
-            <i class="bi bi-wallet2 fs-4"></i>
-            <span class="fw-bold">ExpenseTracker</span>
+        <a class="navbar-brand" href="dashboard.php">
+            <i class="bi bi-journal-bookmark" style="color: var(--sage);"></i>
+            Ledger<span class="brand-dot"></span>
         </a>
 
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
@@ -94,40 +99,39 @@ function rupees(float $val): string {
         </button>
 
         <div class="collapse navbar-collapse" id="navMenu">
-            <ul class="navbar-nav ms-auto align-items-center gap-2">
+            <ul class="navbar-nav ms-auto align-items-center gap-1">
                 <li class="nav-item">
                     <a class="nav-link active" href="dashboard.php">
-                        <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                        <i class="bi bi-grid-1x2 me-1"></i>Overview
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="add_transaction.php">
-                        <i class="bi bi-plus-circle me-1"></i>Add Transaction
+                        <i class="bi bi-plus-circle me-1"></i>Record
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="history.php">
-                        <i class="bi bi-clock-history me-1"></i>History
+                        <i class="bi bi-list-ul me-1"></i>History
                     </a>
                 </li>
+
                 <li class="nav-item ms-2">
                     <span class="role-badge badge-<?= strtolower($_SESSION['user_role']) ?>">
                         <i class="bi bi-<?= $_SESSION['user_role'] === 'Student' ? 'mortarboard' : 'briefcase' ?> me-1"></i>
                         <?= htmlspecialchars($_SESSION['user_role']) ?>
                     </span>
                 </li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle d-flex align-items-center gap-1" href="#"
-                       data-bs-toggle="dropdown">
-                        <div class="avatar-circle">
-                            <?= strtoupper(substr($_SESSION['username'], 0, 1)) ?>
-                        </div>
-                        <span><?= htmlspecialchars($_SESSION['username']) ?></span>
+
+                <li class="nav-item dropdown ms-1">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" data-bs-toggle="dropdown">
+                        <div class="avatar-circle"><?= strtoupper(substr($_SESSION['username'], 0, 1)) ?></div>
+                        <span style="font-size:.85rem;"><?= htmlspecialchars($_SESSION['username']) ?></span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><span class="dropdown-item-text text-muted small"><?= htmlspecialchars($_SESSION['email']) ?></span></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-danger" href="logout.php">
+                        <li><a class="dropdown-item" href="logout.php" style="color:var(--rose-deep);">
                             <i class="bi bi-box-arrow-right me-2"></i>Logout
                         </a></li>
                     </ul>
@@ -141,18 +145,18 @@ function rupees(float $val): string {
 <main class="container-fluid px-4 py-4">
 
     <!-- Page Header -->
-    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div class="d-flex align-items-start justify-content-between mb-4 flex-wrap gap-3">
         <div>
-            <h4 class="fw-bold mb-0">Welcome back, <?= htmlspecialchars(explode(' ', $_SESSION['username'])[0]) ?>! 👋</h4>
-            <small class="text-muted">Here's your financial overview</small>
+            <h1 class="page-heading"><?= $greeting ?>, <?= $firstName ?>.</h1>
+            <p class="page-subheading">Here's where your money stands today.</p>
         </div>
-        <a href="add_transaction.php" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i>Add Transaction
+        <a href="add_transaction.php" class="btn btn-primary d-flex align-items-center gap-2">
+            <i class="bi bi-plus-lg"></i> Record Transaction
         </a>
     </div>
 
-    <!-- ===== SUMMARY CARDS ===== -->
-    <div class="row g-4 mb-4">
+    <!-- ===== GLASSMORPHISM STAT CARDS ===== -->
+    <div class="row g-3 mb-4">
 
         <!-- Total Income -->
         <div class="col-12 col-md-4">
@@ -178,101 +182,151 @@ function rupees(float $val): string {
         <div class="col-12 col-md-4">
             <div class="summary-card balance-card <?= $balance < 0 ? 'negative' : '' ?>">
                 <div class="card-icon"><i class="bi bi-piggy-bank-fill"></i></div>
-                <div class="card-label">Remaining Balance</div>
+                <div class="card-label">Net Balance</div>
                 <div class="card-amount"><?= rupees($balance) ?></div>
-                <div class="card-sub"><?= $balance >= 0 ? 'You are in the green! 🎉' : 'Expenses exceed income!' ?></div>
+                <div class="card-sub"><?= $balance >= 0 ? 'You\'re in the green ✦' : 'Expenses exceed income' ?></div>
             </div>
         </div>
 
     </div>
 
-    <!-- ===== EXPENSE RATIO PROGRESS BAR ===== -->
+    <!-- ===== EXPENSE RATIO ===== -->
     <?php if ($total_income > 0): ?>
     <div class="info-card mb-4">
-        <div class="d-flex justify-content-between mb-2">
-            <span class="fw-semibold">Expense Ratio</span>
-            <span class="text-muted small">
-                <?= round(($total_expense / $total_income) * 100, 1) ?>% of income spent
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span style="font-family:var(--font-sans); font-size:.8rem; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted);">Expense Ratio</span>
+            <?php $ratio = min(100, ($total_expense / $total_income) * 100); ?>
+            <span style="font-family:var(--font-serif); font-size:1.1rem; font-weight:700; color:var(--text);">
+                <?= round($ratio, 1) ?><span style="font-size:.75rem; font-weight:400; color:var(--text-muted); font-family:var(--font-sans);">% spent</span>
             </span>
         </div>
-        <?php $ratio = min(100, ($total_expense / $total_income) * 100); ?>
-        <div class="progress" style="height: 10px; border-radius: 999px;">
-            <div class="progress-bar <?= $ratio > 80 ? 'bg-danger' : ($ratio > 60 ? 'bg-warning' : 'bg-success') ?>"
-                 style="width: <?= $ratio ?>%; border-radius: 999px; transition: width 1s ease;">
-            </div>
+        <div class="ratio-bar-wrap">
+            <div class="ratio-bar-fill <?= $ratio > 80 ? 'danger' : ($ratio > 60 ? 'caution' : 'safe') ?>"
+                 style="width: <?= $ratio ?>%;"></div>
         </div>
-        <div class="d-flex justify-content-between mt-1">
-            <small class="text-success">₹0</small>
-            <small class="text-danger"><?= rupees($total_income) ?></small>
+        <div class="d-flex justify-content-between mt-2">
+            <small style="font-family:var(--font-sans); color:var(--sage-deep); font-size:.75rem;">₹ 0</small>
+            <small style="font-family:var(--font-sans); color:var(--rose-deep); font-size:.75rem;"><?= rupees($total_income) ?></small>
         </div>
     </div>
     <?php endif; ?>
 
-    <!-- ===== RECENT TRANSACTIONS ===== -->
-    <div class="info-card">
-        <div class="d-flex align-items-center justify-content-between mb-3">
-            <h5 class="fw-bold mb-0"><i class="bi bi-clock-history me-2"></i>Recent Transactions</h5>
-            <a href="history.php" class="btn btn-sm btn-outline-primary">View All</a>
+    <!-- ===== ASYMMETRIC LAYOUT: History (wider) + Breakdown (narrower) ===== -->
+    <div class="row g-4">
+
+        <!-- Transaction History — takes more visual weight -->
+        <div class="col-12 col-lg-8">
+            <div class="info-card h-100">
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                    <h5 class="section-title"><i class="bi bi-layout-text-window me-2" style="color:var(--text-subtle); font-size:1rem;"></i>Recent Transactions</h5>
+                    <a href="history.php" class="btn btn-outline-secondary btn-sm">View all</a>
+                </div>
+
+                <?php if (empty($recent_transactions)): ?>
+                    <div class="empty-state">
+                        <div class="es-icon">📒</div>
+                        <div class="es-title">Your financial journey starts here.</div>
+                        <p class="es-sub">You haven't recorded anything yet. Every great ledger starts with a single entry.</p>
+                        <a href="add_transaction.php" class="es-action">Add First Record</a>
+                    </div>
+                <?php else: ?>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-head">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Category</th>
+                                    <th>Description</th>
+                                    <th>Type</th>
+                                    <th class="text-end">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($recent_transactions as $txn): ?>
+                                <tr>
+                                    <td>
+                                        <span style="color:var(--text-muted); font-size:.82rem; font-family:var(--font-sans);">
+                                            <?= date('d M \'y', strtotime($txn['date'])) ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="category-pill"><?= htmlspecialchars($txn['category_name']) ?></span>
+                                    </td>
+                                    <td style="color:var(--text-muted); font-size:.88rem;">
+                                        <?= htmlspecialchars($txn['description'] ?: '—') ?>
+                                    </td>
+                                    <td>
+                                        <?php if ($txn['type'] === 'Income'): ?>
+                                            <span class="filter-chip income-chip" style="padding:.15rem .6rem; font-size:.72rem;">
+                                                <i class="bi bi-arrow-down me-1"></i>Income
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="filter-chip expense-chip" style="padding:.15rem .6rem; font-size:.72rem;">
+                                                <i class="bi bi-arrow-up me-1"></i>Expense
+                                            </span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="text-end fw-semibold" style="font-family:var(--font-serif); font-size:.95rem; color:<?= $txn['type'] === 'Income' ? 'var(--sage-deep)' : 'var(--rose-deep)' ?>;">
+                                        <?= $txn['type'] === 'Income' ? '+' : '−' ?><?= rupees((float)$txn['amount']) ?>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php endif; ?>
+            </div>
         </div>
 
-        <?php if (empty($recent_transactions)): ?>
-            <div class="empty-state py-5 text-center">
-                <i class="bi bi-inbox fs-1 text-muted"></i>
-                <p class="mt-2 text-muted">No transactions yet. <a href="add_transaction.php">Add your first one!</a></p>
+        <!-- Right Column: Category Breakdown -->
+        <div class="col-12 col-lg-4">
+            <div class="info-card h-100">
+                <h5 class="section-title mb-4"><i class="bi bi-bar-chart me-2" style="color:var(--text-subtle); font-size:1rem;"></i>Top Categories</h5>
+
+                <?php if (empty($cat_breakdown)): ?>
+                    <div class="empty-state" style="padding: 2rem 1rem;">
+                        <div class="es-icon">📊</div>
+                        <p class="es-sub" style="font-size:.82rem;">Category breakdown will appear once you add transactions.</p>
+                    </div>
+                <?php else: ?>
+                    <?php
+                    $maxTotal = max(array_column($cat_breakdown, 'total')) ?: 1;
+                    foreach ($cat_breakdown as $cat):
+                        $pct = ($cat['total'] / $maxTotal) * 100;
+                        $isIncome = $cat['type'] === 'Income';
+                    ?>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span style="font-family:var(--font-sans); font-size:.82rem; color:var(--text);">
+                                <?= htmlspecialchars($cat['category_name']) ?>
+                            </span>
+                            <span style="font-family:var(--font-serif); font-size:.88rem; font-weight:700; color:<?= $isIncome ? 'var(--sage-deep)' : 'var(--rose-deep)' ?>;">
+                                ₹<?= number_format((float)$cat['total'], 0) ?>
+                            </span>
+                        </div>
+                        <div class="ratio-bar-wrap" style="height:5px;">
+                            <div class="ratio-bar-fill <?= $isIncome ? 'safe' : 'danger' ?>" style="width:<?= round($pct) ?>%;"></div>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+
+                    <div class="mt-4 pt-3" style="border-top:1px solid var(--border);">
+                        <a href="add_transaction.php" style="font-family:var(--font-sans); font-size:.82rem; color:var(--text-muted); text-decoration:none; display:flex; align-items:center; gap:.4rem;">
+                            <i class="bi bi-plus-circle" style="color:var(--sage);"></i>
+                            What did you earn or spend today?
+                        </a>
+                    </div>
+                <?php endif; ?>
             </div>
-        <?php else: ?>
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-head">
-                        <tr>
-                            <th>Date</th>
-                            <th>Category</th>
-                            <th>Description</th>
-                            <th>Type</th>
-                            <th class="text-end">Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($recent_transactions as $txn): ?>
-                        <tr>
-                            <td>
-                                <span class="text-muted small">
-                                    <?= date('d M Y', strtotime($txn['date'])) ?>
-                                </span>
-                            </td>
-                            <td>
-                                <span class="category-pill"><?= htmlspecialchars($txn['category_name']) ?></span>
-                            </td>
-                            <td class="text-muted">
-                                <?= htmlspecialchars($txn['description'] ?: '—') ?>
-                            </td>
-                            <td>
-                                <?php if ($txn['type'] === 'Income'): ?>
-                                    <span class="badge bg-success-subtle text-success">
-                                        <i class="bi bi-arrow-down me-1"></i>Income
-                                    </span>
-                                <?php else: ?>
-                                    <span class="badge bg-danger-subtle text-danger">
-                                        <i class="bi bi-arrow-up me-1"></i>Expense
-                                    </span>
-                                <?php endif; ?>
-                            </td>
-                            <td class="text-end fw-semibold <?= $txn['type'] === 'Income' ? 'text-success' : 'text-danger' ?>">
-                                <?= $txn['type'] === 'Income' ? '+' : '-' ?><?= rupees((float)$txn['amount']) ?>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        <?php endif; ?>
+        </div>
+
     </div>
 
 </main>
 
 <!-- Footer -->
-<footer class="text-center py-3 mt-4">
-    <small class="text-muted">Personal Expense Tracker &copy; <?= date('Y') ?> — DPU MCA Project</small>
+<footer class="text-center py-3 mt-5">
+    <small>Personal Ledger &copy; <?= date('Y') ?> — DPU MCA Project</small>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

@@ -7,7 +7,7 @@
 
 define('DB_HOST',     'localhost');   // MySQL server host
 define('DB_USER',     'root');        // MySQL username
-define('DB_PASS',     '15056324');            // MySQL password (empty for XAMPP default)
+define('DB_PASS',     '15056324');   // MySQL password
 define('DB_NAME',     'expense_tracker');
 define('DB_PORT',     3306);
 

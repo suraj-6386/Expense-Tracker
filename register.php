@@ -5,7 +5,6 @@
 
 session_start();
 
-// Redirect if already logged in
 if (isset($_SESSION['user_id'])) {
     header('Location: dashboard.php');
     exit;
@@ -16,7 +15,6 @@ require_once 'config.php';
 $error   = '';
 $success = '';
 
-// -- Handle Registration Form Submission ---------------------
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $username  = trim($_POST['username']  ?? '');
@@ -25,7 +23,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $confirm   = trim($_POST['confirm']   ?? '');
     $user_role = trim($_POST['user_role'] ?? '');
 
-    // ---- Validation ----
     if (empty($username) || empty($email) || empty($password) || empty($confirm) || empty($user_role)) {
         $error = 'All fields are required.';
     } elseif (strlen($username) < 3) {
@@ -41,7 +38,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $conn = getConnection();
 
-        // Check if email already exists
         $check = $conn->prepare('SELECT id FROM users WHERE email = ?');
         $check->bind_param('s', $email);
         $check->execute();
@@ -53,17 +49,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $check->close();
 
-            // Hash password with BCrypt (default_algorithm = PASSWORD_BCRYPT)
             $hashed = password_hash($password, PASSWORD_DEFAULT);
 
-            // Insert new user
             $stmt = $conn->prepare(
                 'INSERT INTO users (username, email, password, user_role) VALUES (?, ?, ?, ?)'
             );
             $stmt->bind_param('ssss', $username, $email, $hashed, $user_role);
 
             if ($stmt->execute()) {
-                $success = 'Account created successfully! You can now <a href="index.php">log in</a>.';
+                $success = 'Account created successfully! You can now <a href="index.php">sign in</a>.';
             } else {
                 $error = 'Registration failed. Please try again.';
             }
@@ -80,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Register — Personal Expense Tracker</title>
+    <title>Create Account — Ledger</title>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
@@ -88,30 +82,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body class="auth-body">
 
-<div class="container d-flex justify-content-center align-items-center min-vh-100 py-4">
+<div class="container d-flex justify-content-center align-items-center min-vh-100 py-5">
     <div class="auth-card">
 
-        <!-- Header -->
-        <div class="auth-header text-center mb-4">
-            <div class="auth-logo mb-3">
-                <i class="bi bi-person-plus"></i>
+        <!-- Wordmark -->
+        <div class="text-center mb-4">
+            <div class="auth-wordmark mb-1">
+                <i class="bi bi-journal-bookmark" style="font-size:1.5rem; color: var(--sage);"></i>
+                Ledger<span class="wm-dot"></span>
             </div>
-            <h2 class="fw-bold">Create Account</h2>
-            <p class="text-muted">Join as a Student or Corporate user</p>
+            <p class="auth-subtitle">Start tracking. One entry at a time.</p>
         </div>
 
         <!-- Alerts -->
         <?php if (!empty($error)): ?>
-            <div class="alert alert-danger d-flex align-items-center" role="alert">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <div class="alert alert-danger d-flex align-items-center mb-4">
+                <i class="bi bi-exclamation-circle me-2"></i>
                 <?= htmlspecialchars($error) ?>
             </div>
         <?php endif; ?>
 
         <?php if (!empty($success)): ?>
-            <div class="alert alert-success d-flex align-items-center" role="alert">
-                <i class="bi bi-check-circle-fill me-2"></i>
-                <?= $success /* HTML link — safe output */ ?>
+            <div class="alert alert-success d-flex align-items-center mb-4">
+                <i class="bi bi-check-circle me-2"></i>
+                <?= $success /* safe — HTML link intentional */ ?>
             </div>
         <?php endif; ?>
 
@@ -119,44 +113,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <form method="POST" action="register.php" novalidate>
 
             <!-- Full Name -->
-            <div class="mb-3">
-                <label for="username" class="form-label fw-semibold">Full Name</label>
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-person"></i></span>
-                    <input
-                        type="text"
-                        class="form-control"
-                        id="username"
-                        name="username"
-                        placeholder="John Doe"
-                        value="<?= htmlspecialchars($_POST['username'] ?? '') ?>"
-                        required
-                        autofocus
-                    />
-                </div>
+            <div class="underline-field">
+                <label for="username">Full Name</label>
+                <i class="bi bi-person field-icon"></i>
+                <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    placeholder="e.g. Suraj Gupta"
+                    value="<?= htmlspecialchars($_POST['username'] ?? '') ?>"
+                    required
+                    autofocus
+                />
             </div>
 
             <!-- Email -->
-            <div class="mb-3">
-                <label for="email" class="form-label fw-semibold">Email Address</label>
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                    <input
-                        type="email"
-                        class="form-control"
-                        id="email"
-                        name="email"
-                        placeholder="you@example.com"
-                        value="<?= htmlspecialchars($_POST['email'] ?? '') ?>"
-                        required
-                    />
-                </div>
+            <div class="underline-field">
+                <label for="email">Email Address</label>
+                <i class="bi bi-envelope field-icon"></i>
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    placeholder="you@example.com"
+                    value="<?= htmlspecialchars($_POST['email'] ?? '') ?>"
+                    required
+                />
             </div>
 
             <!-- Role Selection -->
-            <div class="mb-3">
-                <label class="form-label fw-semibold">I am a...</label>
-                <div class="role-selector d-flex gap-3">
+            <div class="mb-4">
+                <div style="font-size:.72rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--text-muted); margin-bottom:.75rem; font-family:var(--font-sans);">
+                    I am a...
+                </div>
+                <div class="d-flex gap-3">
                     <label class="role-card flex-fill <?= (($_POST['user_role'] ?? '') === 'Student') ? 'selected' : '' ?>">
                         <input type="radio" name="user_role" value="Student"
                                <?= (($_POST['user_role'] ?? '') === 'Student') ? 'checked' : '' ?> required/>
@@ -173,49 +163,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
 
             <!-- Password -->
-            <div class="mb-3">
-                <label for="password" class="form-label fw-semibold">Password</label>
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                    <input
-                        type="password"
-                        class="form-control"
-                        id="password"
-                        name="password"
-                        placeholder="Minimum 6 characters"
-                        required
-                    />
-                </div>
+            <div class="underline-field">
+                <label for="password">Password</label>
+                <i class="bi bi-lock field-icon"></i>
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="Minimum 6 characters"
+                    required
+                />
             </div>
 
             <!-- Confirm Password -->
-            <div class="mb-4">
-                <label for="confirm" class="form-label fw-semibold">Confirm Password</label>
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
-                    <input
-                        type="password"
-                        class="form-control"
-                        id="confirm"
-                        name="confirm"
-                        placeholder="Repeat your password"
-                        required
-                    />
-                </div>
+            <div class="underline-field">
+                <label for="confirm">Confirm Password</label>
+                <i class="bi bi-shield-lock field-icon"></i>
+                <input
+                    type="password"
+                    id="confirm"
+                    name="confirm"
+                    placeholder="Repeat your password"
+                    required
+                />
             </div>
 
-            <div class="d-grid mb-3">
-                <button type="submit" class="btn btn-primary btn-lg btn-auth">
-                    <i class="bi bi-person-check me-2"></i>Create Account
+            <div class="mt-4 mb-3">
+                <button type="submit" class="btn-auth">
+                    Create Account &rarr;
                 </button>
             </div>
 
         </form>
 
-        <hr/>
-        <p class="text-center mb-0 text-muted">
+        <div class="auth-divider">or</div>
+
+        <p class="text-center mb-0" style="font-family:var(--font-sans); font-size:.88rem; color:var(--text-muted);">
             Already have an account?
-            <a href="index.php" class="fw-semibold text-decoration-none">Sign In</a>
+            <a href="index.php" style="color:var(--text); font-weight:600; text-decoration:none;">Sign in</a>
         </p>
 
     </div>
@@ -223,7 +208,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Highlight selected role card
     document.querySelectorAll('.role-card input').forEach(radio => {
         radio.addEventListener('change', function () {
             document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
